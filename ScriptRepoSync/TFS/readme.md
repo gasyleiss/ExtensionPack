@@ -3,26 +3,36 @@
 You can use the [Invoke-TfsSync.ps1](./Invoke-TfsSync.ps1) script to sync the latest version of a project folder from a Team Foundation Server project collection.
 The script requires the TFS Power Tools. You can download the Tools from the [Visual Studio Marketplace](https://marketplace.visualstudio.com).
 
-## Required Script Parameters
+## Script Parameters
 
-- TfsServerUri
+- TfsServerUri (Mandatory)
 
-  The Uri of the Team Foundation Server project collection.
+  The Uri of the Team Foundation Server project collection.  
   e.g. `http://myTfsServer.MyDomain.com:8080/tfs/DefaultProjectCollection`
 
-- TfsCredential
+- TfsCredential (Mandatory)
 
   The  Credential for TFS access.
 
-- TeamProject
+- TeamProject (Mandatory)
 
   The Team project path.
   e.g. `$/MyProjectName/MyBranch/SubFolderA/SubFolderB`
 
+- SRLibraryPath
+
+  Path to the ScriptRunner script repository, where the local TFS workspace is created.  
+  Default value: `C:\ProgramData\AppSphere\ScriptMgr\TFS`
+
+- CleanSync
+
+  Add this switch to cleanup your local workspace, before getting the latest version of your project folder.
+
 ## How-To create a ScriptRunner Action
 
 - Install the TFS Power Tools at the ScriptRunner service host.
-- Download the [Invoke-TfsSync.ps1](./Invoke-TfsSync.ps1) script to the ScriptRunner script repository. The default location of the ScriptRunner script repository is `C:\ProgramData\AppSphere\ScriptMgr`.
+- Download the [Invoke-TfsSync.ps1](./Invoke-TfsSync.ps1) script to the ScriptRunner script repository.  
+  The default location of the ScriptRunner script repository is `C:\ProgramData\AppSphere\ScriptMgr`.
 - Use the ScriptRunner Admin App to
   - create a `Credential` with UserName and Password for authenthication at the Team Foundation Server.
   - create a new `Action` with the [Invoke-TfsSync.ps1](./Invoke-TfsSync.ps1) script.

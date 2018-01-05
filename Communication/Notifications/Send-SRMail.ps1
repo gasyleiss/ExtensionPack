@@ -48,6 +48,9 @@
 
 .Parameter Priority
     Specifies the priority of the e-mail message
+
+.Parameter UseSsl
+    Uses the Secure Sockets Layer (SSL) protocol to establish a connection to the remote computer to send mail
 #>
 
 [CmdLetBinding()]
@@ -69,96 +72,102 @@ Param(
 )
 
 try{    
-    [string[]]$Script:Addr=$To.Split(',')
-    if($PSBoundParameters.ContainsKey('Body') -eq $false ){
-        $Body=' '
+    function SendMail([string]$MailSender, [string[]]$MailRecipients, [string]$MailSubject, [string]$MailBody,
+                        [bool]$MailUseSsl,[string]$MailPriority,
+                        [string]$MailServer, [PSCredential]$Credential, [string[]]$CopyRecipients, [string[]] $Files ){
+        $CreateCommand = {
+            $srv =$args[0] 
+            $creds=$args[1]
+            $Ccs=$args[2]
+            $atts=$args[3]
+            if(($null -ne $srv) -and ($null -ne $creds) -and ($null -ne $Ccs) -and ($null -ne $atts)){ # Server, Credentials, CC, Attachments
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                        -SmtpServer $srv -Credential $creds -Cc $Ccs -Attachments $atts
+            }
+            elseif(($null -ne $srv) -and ($null -ne $creds) -and ($null -ne $Ccs) ){# Server, Credentials, CC
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                        -SmtpServer $srv -Credential $creds -Cc $Ccs
+            }
+            elseif(($null -ne $srv) -and ($null -ne $creds) -and ($null -ne $atts)){# Server, Credentials, Attachments
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                        -SmtpServer $srv -Credential $creds -Attachments $atts
+            }
+            elseif(($null -ne $srv) -and ($null -ne $Ccs) -and ($null -ne $atts)){# Server, CC, Attachments
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                        -SmtpServer $srv -Cc $Ccs -Attachments $atts
+            }
+            elseif(($null -ne $creds) -and ($null -ne $Ccs) -and ($null -ne $atts)){# Credentials, CC, Attachments
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                        -Credential $creds -Cc $Ccs -Attachments $atts
+            }
+            elseif(($null -ne $srv) -and ($null -ne $creds)){# Server, Credentials
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                       -SmtpServer $srv -Credential $creds
+            }
+            elseif(($null -ne $srv) -and ($null -ne $Ccs) ){# Server, CC
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                       -SmtpServer $srv -Cc $Ccs
+            }
+            elseif(($null -ne $srv) -and ($null -ne $atts) ){# Server, Attachments
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                       -SmtpServer $srv  -Attachments $atts
+            }
+            elseif(($null -ne $creds) -and ($null -ne $Ccs) ){# Credentials, CC
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                        -Credential $creds -Cc $Ccs
+            }
+            elseif(($null -ne $creds) -and ($null -ne $atts) ){# Credentials, Attachments
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                        -Credential $creds -Attachments $atts
+            }
+            elseif(($null -ne $Ccs) -and ($null -ne $atts) ){# CC, Attachments
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                       -Cc $Ccs -Attachments $atts
+            }
+            elseif(($null -ne $Ccs) ){# CC
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                       -Cc $Ccs
+            }
+            elseif(($null -ne $atts)){# Attachments
+                Send-MailMessage -To $Addr -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                        -Attachments $atts
+            }
+            elseif(($null -ne $creds)){# Credentials
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                        -Credential $creds
+            }
+            elseif(($null -ne $srv)){# Server
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl `
+                        -SmtpServer $srv 
+            }
+            else{
+                Send-MailMessage -To $MailRecipients -Subject $MailSubject -Body $MailBody -From $MailSender -Priority $MailPriority -UseSsl:$MailUseSsl
+            }
+        }
+        if([System.String]::IsNullOrEmpty($MailBody ) -eq $true){
+            $MailBody=' '
+        }
+        if([System.String]::IsNullOrEmpty($MailPriority ) -eq $true){
+            $MailPriority='Normal'
+        }       
+        Invoke-Command -ScriptBlock $CreateCommand -ArgumentList $MailServer,$Credential,$CopyRecipients,$Files
     }
-    if(($PSBoundParameters.ContainsKey('SmtpServer') -eq $true ) -and ($PSBoundParameters.ContainsKey('ServerCredential') -eq $true )){
-        if(($PSBoundParameters.ContainsKey('Cc') -eq $true) -and ($PSBoundParameters.ContainsKey('Attachments') -eq $true) ){
-            [string[]]$files=$Attachments.Split(',')
-            [string[]]$copies=$Cc.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Cc $copies -Attachments $files -SmtpServer $SmtpServer -Credential $ServerCredential -UseSsl:$UseSsl
-        }
-        elseif($PSBoundParameters.ContainsKey('Cc') -eq $true ){
-            [string[]]$copies=$Cc.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Cc $copies  -SmtpServer $SmtpServer -Credential $ServerCredential -UseSsl:$UseSsl
-        }
-        elseif($PSBoundParameters.ContainsKey('Attachments') -eq $true) {
-            [string[]]$files=$Attachments.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Attachments $files -SmtpServer $SmtpServer -Credential $ServerCredential -UseSsl:$UseSsl
-        }
-        else{
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -SmtpServer $SmtpServer -Credential $ServerCredential -UseSsl:$UseSsl
-        }
+    [string[]]$Script:atts=$null
+    if($PSBoundParameters.ContainsKey('Attachments') -eq $true ){
+        $Script:atts = $Attachments.Split(',')
     }
-    elseif($PSBoundParameters.ContainsKey('ServerCredential') -eq $true ){
-        if(($PSBoundParameters.ContainsKey('Cc') -eq $true) -and ($PSBoundParameters.ContainsKey('Attachments') -eq $true) ){
-            [string[]]$files=$Attachments.Split(',')
-            [string[]]$copies=$Cc.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Cc $copies -Attachments $files -Credential $ServerCredential -UseSsl:$UseSsl
-        }
-        elseif($PSBoundParameters.ContainsKey('Cc') -eq $true ){
-            [string[]]$copies=$Cc.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Cc $copies  -Credential $ServerCredential -UseSsl:$UseSsl
-        }
-        elseif($PSBoundParameters.ContainsKey('Attachments') -eq $true) {
-            [string[]]$files=$Attachments.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Attachments $files -Credential $ServerCredential -UseSsl:$UseSsl
-        }
-        else{
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Credential $ServerCredential -UseSsl:$UseSsl
-        }
+    [string[]]$Script:copies = $null
+    if($PSBoundParameters.ContainsKey('Cc') -eq $true ){
+        $Script:copies = $Cc.Split(',')
     }
-    elseif($PSBoundParameters.ContainsKey('SmtpServer') -eq $true ){
-        if(($PSBoundParameters.ContainsKey('Cc') -eq $true) -and ($PSBoundParameters.ContainsKey('Attachments') -eq $true) ){
-            [string[]]$files=$Attachments.Split(',')
-            [string[]]$copies=$Cc.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Cc $copies -Attachments $files -SmtpServer $SmtpServer  -UseSsl:$UseSsl
-        }
-        elseif($PSBoundParameters.ContainsKey('Cc') -eq $true ){
-            [string[]]$copies=$Cc.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Cc $copies -SmtpServer $SmtpServer  -UseSsl:$UseSsl
-        }
-        elseif($PSBoundParameters.ContainsKey('Attachments') -eq $true) {
-            [string[]]$files=$Attachments.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Attachments $files -SmtpServer $SmtpServer  -UseSsl:$UseSsl
-        }
-        else{
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -SmtpServer $SmtpServer  -UseSsl:$UseSsl
-        }
-    }
-    else{
-        if(($PSBoundParameters.ContainsKey('Cc') -eq $true) -and ($PSBoundParameters.ContainsKey('Attachments') -eq $true) ){
-            [string[]]$files=$Attachments.Split(',')
-            [string[]]$copies=$Cc.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Cc $copies -Attachments $files -UseSsl:$UseSsl
-        }
-        elseif($PSBoundParameters.ContainsKey('Cc') -eq $true ){
-            [string[]]$copies=$Cc.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Cc $copies  -UseSsl:$UseSsl
-        }
-        elseif($PSBoundParameters.ContainsKey('Attachments') -eq $true) {
-            [string[]]$files=$Attachments.Split(',')
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority `
-                -Attachments $files -UseSsl:$UseSsl
-        }
-        else{
-            Send-MailMessage -To $Script:Addr -Subject $Subject -Body $Body -From $From -Priority $Priority -UseSsl:$UseSsl
-        }
+    [string[]]$Addr=$To.Split(',')
+  
+    SendMail $From $Addr $Subject $Body $UseSsl $Priority $SmtpServer $ServerCredential $Script:copies $Script:atts
+    if($SRXEnv) {
+        $SRXEnv.ResultMessage = "Mail sent out"
+    }    
+    else {
+        Write-Output "Mail sent out"
     }
 }
 catch{

@@ -72,9 +72,63 @@ Param(
 )
 
 try{    
-    function SendMail([string]$MailSender, [string[]]$MailRecipients, [string]$MailSubject, [string]$MailBody,
-                        [bool]$MailUseSsl,[string]$MailPriority,
-                        [string]$MailServer, [PSCredential]$Credential, [string[]]$CopyRecipients, [string[]] $Files ){
+    function SendMail
+    {
+        <#
+    		.SYNOPSIS
+                Function for send mail. You can use the function from other scripts
+			
+            .PARAMETER MailSender
+                Specifies the address from which the mail is sent
+
+            .PARAMETER MailRecipients
+                Specifies the addresses to which the mail is sent
+
+            .PARAMETER MailSubject
+                Specifies the subject of the email message
+
+            .PARAMETER MailBody
+                Specifies the body of the email message
+
+            .PARAMETER MailUseSsl
+                Indicates that the cmdlet uses the Secure Sockets Layer (SSL) protocol to establish a connection to the remote computer to send mail
+
+            .PARAMETER MailPriority
+                Specifies the priority of the email message. The acceptable values for this parameter are: Normal, High, Low
+
+            .PARAMETER MailServer
+                Specifies the name of the SMTP server that sends the e-mail message. 
+                The default value is the value of the $PSEmailServer preference variable
+
+            .PARAMETER Credential
+                Specifies a user account that has permission to perform this action. The default is the current user.
+
+            .PARAMETER CopyRecipients
+                Specifies the e-mail addresses to which a carbon copy (CC) of the e-mail message is sent. 
+                Enter names (optional) and the e-mail address, such as "John Doe <john.doe@example.com>".
+                Use the comma to separate the addresses
+
+            .PARAMETER Files
+                Specifies the path and file names of files to be attached to the e-mail message. 
+                Use the comma to separate the files
+        #>
+        [CmdletBinding()]
+        param(
+            [parameter(Mandatory = $true)]
+            [string]$MailSender,
+            [parameter(Mandatory = $true)]
+            [string[]]$MailRecipients,
+            [parameter(Mandatory = $true)]
+            [string]$MailSubject,
+            [string]$MailBody,
+            [bool]$MailUseSsl,
+            [string]$MailPriority,
+            [string]$MailServer,
+            [PSCredential]$Credential,
+            [string[]]$CopyRecipients, 
+            [string[]] $Files
+         )
+
         $CreateCommand = {
             $srv =$args[0] 
             $creds=$args[1]
@@ -153,11 +207,11 @@ try{
         Invoke-Command -ScriptBlock $CreateCommand -ArgumentList $MailServer,$Credential,$CopyRecipients,$Files
     }
     [string[]]$Script:atts=$null
-    if($PSBoundParameters.ContainsKey('Attachments') -eq $true ){
+    if(-not [System.String]::IsNullOrWhiteSpace($Attachments)){
         $Script:atts = $Attachments.Split(',')
     }
     [string[]]$Script:copies = $null
-    if($PSBoundParameters.ContainsKey('Cc') -eq $true ){
+    if(-not [System.String]::IsNullOrWhiteSpace($Cc)){
         $Script:copies = $Cc.Split(',')
     }
     [string[]]$Addr=$To.Split(',')

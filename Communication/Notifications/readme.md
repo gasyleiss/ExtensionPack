@@ -13,6 +13,6 @@
    $sender = 'sender@example.com'<br>
    $receipient = 'receipient@example.com'<br>
    $subject = 'MysubjectText'<br>
-   $mailhost = 'smpt.example.com'<br>
+   $mailhost = 'smtp.example.com'<br>
    SendMail $sender $receipient $subject 'Mybodytext' $mailhost<br>
    

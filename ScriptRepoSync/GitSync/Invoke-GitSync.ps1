@@ -80,12 +80,17 @@ if($GitRepoUrl.Trim().StartsWith('https://') -or $GitRepoUrl.Trim().StartsWith('
         $gitUrl = $GitRepoUrl.Insert($i, $cred.UserName + ':' + $([uri]::EscapeDataString($cred.Password)) + '@')
         Write-Output "$GitAction $($gitUrl.Replace($([uri]::EscapeDataString($cred.Password)), '*****')) ..."
     }
-    if($PSCmdlet.ParameterSetName -eq 'UserName'){
-        if(-not ($GitUserName -match $userNamePattern)){
-            throw "Invalid UserName '$GitUserName'. Do not use a email address. Use the git username instead."
+    else{
+        if($PSCmdlet.ParameterSetName -eq 'UserName'){
+            if(-not ($GitUserName -match $userNamePattern)){
+                throw "Invalid UserName '$GitUserName'. Do not use a email address. Use the git username instead."
+            }
+            $gitUrl = $GitRepoUrl.Insert($i, $GitUserName + '@')
+            Write-Output "$GitAction $gitUrl ..."
         }
-        $gitUrl = $GitRepoUrl.Insert($i, $GitUserName + '@')
-        Write-Output "$GitAction $gitUrl ..."
+        else{
+            throw "Undefined ParameterSet."
+        }
     }
 }
 else {

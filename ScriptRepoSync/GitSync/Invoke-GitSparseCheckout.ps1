@@ -102,11 +102,6 @@ function Invoke-GitCommand ([string[]]$ArgumentList){
         # see: https://stackoverflow.com/questions/2095088/error-when-calling-3rd-party-executable-from-powershell-when-using-an-ide
         $result = (& cmd.exe '/c' "`"$script:GitExePath`" 2>&1" $ArgumentList)
         $result
-        if($ArgumentList[0] -eq 'checkout'){
-            if (($result | ForEach-Object {$_ -like "*use `"git pull`"*"}) -eq $true){ # => $true or $null (check if array contains $true)
-                Invoke-GitCommand -ArgumentList @('pull', 'origin')
-            }
-        }
         Add-SRXResultMessage -Message $result
     }    
     catch {
@@ -196,6 +191,9 @@ if(Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue){
     }
     # checkout specified branch 
     $arguments = @('checkout', $Branch)
+    Invoke-GitCommand $arguments
+
+    $arguments = @('pull', 'origin')
     Invoke-GitCommand $arguments
 
     $Script:currentLocation | Set-Location

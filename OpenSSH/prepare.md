@@ -1,6 +1,6 @@
 # OpenSSH preparations
 
-Do the following steps to prepare your machines for using SSH.
+Do the following steps to prepare your machines for using OpenSSH.
 
 ## Install and configure ssh at Linux (Ubuntu 16.04.2 LTS)
 

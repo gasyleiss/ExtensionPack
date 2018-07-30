@@ -20,6 +20,12 @@
     .PARAMETER Encoding
     The encoding of the shell script file.
 
+    .PARAMETER PrintScriptContent
+    Display the content of shell script.
+
+    .PARAMETER Port
+    The port of ssh service at the remote host.
+
 #>
 
 [CmdletBinding()]
@@ -34,13 +40,17 @@ param
     [Parameter(Mandatory=$true, ParameterSetName='ShellScript')]
     [string]$ShellScriptPath,
     [Parameter(ParameterSetName='ShellScript')]
-    [string]$Encoding = 'UTF8'
+    [string]$Encoding = 'UTF8',
+    [Parameter(ParameterSetName='ShellScript')]
+    [switch]$PrintScriptContent,
+    [ValidateRange(1,65535)]
+    [int]$Port = 22
 )
 
 if ($PSCmdlet.ParameterSetName -eq 'Commands'){
     foreach ($command in $Commands) {
         "$UserName@$RemoteHost `$ $command"
-        & cmd.exe '/c' "ssh.exe 2>&1 -o `"BatchMode yes`" $UserName@$RemoteHost $command"
+        & cmd.exe '/c' "ssh.exe 2>&1 -p $Port -o `"BatchMode yes`" $UserName@$RemoteHost $command"
         if($LASTEXITCODE -ne 0){
             throw "SSH failed with ExitCode '$LASTEXITCODE'."
         }
@@ -49,12 +59,17 @@ if ($PSCmdlet.ParameterSetName -eq 'Commands'){
 elseif ($PSCmdlet.ParameterSetName -eq 'ShellScript') {
     if(Test-Path -Path $ShellScriptPath -ErrorAction SilentlyContinue){
         "### E X P E R I M E N T A L ###"
-        $sh = Get-Content -Path $ShellScriptPath -Encoding $Encoding -Raw
-        $sh = $sh -creplace '(?m)^\s*\r?\n',''
-        $sh = (($sh -split "`n") | Where-Object {!($_.StartsWith('#'))}) -join ';'
-        $sh = $sh.Trim(@(';'))
-        "Run 'ssh -o `"BatchMode yes`" $UserName@$RemoteHost $sh' ..."
-        & cmd.exe '/c' "ssh.exe 2>&1 -o `"BatchMode yes`" $UserName@$RemoteHost `"$sh`""
+        $sh = Get-Content -Path $ShellScriptPath -Encoding $Encoding -Raw | ForEach-Object -Process { $_ -replace "`r`n","`n" }
+        $scriptName = (Split-Path -Path $ShellScriptPath -Leaf).Replace(" ", [string]::Empty)
+        $cmdSequence = "rm -fr ~/tmp_asr && mkdir -p ~/tmp_asr && cat >> ~/tmp_asr/$scriptName && sed -i 's/\r$//g' ~/tmp_asr/$scriptName && chmod +x ~/tmp_asr/$scriptName && ~/tmp_asr/$scriptName && rm -fr ~/tmp_asr"
+        if($PrintScriptContent.IsPresent){
+            "##### $scriptName #####"
+            $sh
+            "##### EOF '$scriptName' #####"
+            "`nRun  $UserName@$RemoteHost `"$cmdSequence`" ...`n"
+        }
+        $sh | & ssh.exe -p $Port -o `"BatchMode yes`" $UserName@$RemoteHost "$cmdSequence"
+
         if($LASTEXITCODE -ne 0){
             throw "SSH failed with ExitCode '$LASTEXITCODE'."
         }

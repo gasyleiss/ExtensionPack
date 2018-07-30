@@ -27,6 +27,8 @@ PasswordAuthentication yes
 
 ```bash
 sudo /etc/init.d/ssh restart
+# or
+sudo service ssh restart
 ```
 
 ## Install OpenSSH at Windows

@@ -65,6 +65,10 @@ param(
 
 $userNamePattern = [regex]'^([^_]|[a-zA-Z0-9]){1}(?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$'
 
+if(-not (Test-Path -Path $GitExePath -ErrorAction SilentlyContinue)){
+    throw "git.exe does not exist at '$GitExePath'."
+}
+
 if(-not (Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue)){
     New-Item -Path $SRLibraryPath -ItemType 'Directory' -Force
 }
@@ -74,7 +78,11 @@ if($GitRepoUrl.Trim().StartsWith('https://') -or $GitRepoUrl.Trim().StartsWith('
     $i += 3
     if($PSCmdlet.ParameterSetName -eq 'Credential'){
         if(-not ($GitUserCredential.UserName -match $userNamePattern)){
-            throw "Invalid UserName '$($GitUserCredential.UserName)'. Do not use a email address. Use the git username instead."
+            if($GitUserCredential.UserName.Contains('@')){
+                Write-Error "Do not use an email address. Use the git user name instead." -ErrorAction Continue
+            }
+            throw "Invalid UserName '$($GitUserCredential.UserName)'. The user name does not match the GitHub user name pattern."
+            
         }
         $cred = New-Object -TypeName 'System.Net.NetworkCredential' -ArgumentList @($GitUserCredential.UserName, $GitUserCredential.Password)
         $gitUrl = $GitRepoUrl.Insert($i, $cred.UserName + ':' + $([uri]::EscapeDataString($cred.Password)) + '@')
@@ -129,7 +137,7 @@ if(Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue){
             if($SRXEnv -and $err){
                 $SRXEnv.ResultMessage += $err.Exception
             }
-            Write-Error -Message "Failed to run '$GitAction $GitRepoUrl' with '$LASTEXITCODE'." -ErrorAction 'Stop'
+            Write-Error -Message "Failed to run 'git $GitAction $GitRepoUrl' with exit code '$LASTEXITCODE'." -ErrorAction 'Stop'
         }
     }
 }

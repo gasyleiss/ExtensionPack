@@ -67,7 +67,7 @@ param(
     [bool]$Cleanup = $false
 )
 
-$userNamePattern = [regex]'^([^_]|[a-zA-Z0-9]){1}[a-zA-Z0-9]{1,14}$'
+$userNamePattern = [regex]'^([^_]|[a-zA-Z0-9]){1}(?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$'
 
 function Add-SRXResultMessage ([string[]] $Message) {
     if($SRXEnv -and $Message){
@@ -103,14 +103,14 @@ function Invoke-GitCommand ([string[]]$ArgumentList){
         $result = (& cmd.exe '/c' "`"$script:GitExePath`" 2>&1" $ArgumentList)
         $result
         Add-SRXResultMessage -Message $result
-    }    
+    }
     catch {
         $_
-    }    
+    }
     finally{
         Test-LastExitcode -ActionFailed "git $ArgumentList"
-    }    
-}    
+    }
+}
 
 if(-not (Test-Path -Path $GitExePath -ErrorAction SilentlyContinue)){
     throw "'$GitExePath' does not exist."

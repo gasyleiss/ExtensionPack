@@ -63,7 +63,7 @@ param(
     [string]$GitAction = 'pull'
 )
 
-$userNamePattern = [regex]'^([^_]|[a-zA-Z0-9]){1}[a-zA-Z0-9]{1,14}$'
+$userNamePattern = [regex]'^([^_]|[a-zA-Z0-9]){1}(?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$'
 
 if(-not (Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue)){
     New-Item -Path $SRLibraryPath -ItemType 'Directory' -Force

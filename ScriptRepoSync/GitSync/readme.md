@@ -1,6 +1,6 @@
 # Sync Git repositories to ScriptRunner
 
-You can use the [Invoke-GitSync.ps1](./Invoke-GitSync.ps1) script to clone a Git repository to the ScriptRunner Library or pull updates to a local repository.
+You can use the [Invoke-GitSparseCheckout.ps1](./Invoke-GitSparseCheckout.ps1) script to clone a Git repository to the ScriptRunner Library or pull updates to a local repository.
 
 The script requires [Git for Windows](https://git-for-windows.github.io). You can download this tool from [GitHub](https://github.com/git-for-windows/git/releases).
 
@@ -12,29 +12,42 @@ The script requires [Git for Windows](https://git-for-windows.github.io). You ca
 
 - GitUserCredential
 
-    Credential of a git user, who is authorized to access the given git repository. Note that an email address is not a valid account name. You must use this ParameterSet for private repositories.
+    PSCredential of a git user, who is authorized to access the given git repository. Note that an email address is not a valid account name. You must use this ParameterSet for private repositories.
 
-- GitUserName
+- SparseDirs
 
-    UserName of a git user, who is authorized to access the given git repository. Note that an email address is not a valid account name. You can use this ParameterSet for public repositories.
+    Specify the list of subfolders you want to check out. If empty, all files will be checked out.
+    Example: `"ActiveDirectory/*", "O365/*"`
+
+- Branch
+
+    The remote branch to check out.
+    Default: `master`.
 
 - SRLibraryPath
 
     Path to the ScriptRunner Library Path.
     Default: `C:\ProgramData\AppSphere\ScriptMgr`
 
-- GitAction
+- GitExePath
 
-    `Clone` or `pull` the given git repository. Use `clone` for a initial download and `pull` to update already cloned repositories.
+    Path to the git execuatble.
+    Default: `C:\Program Files\Git\cmd\git.exe`.
+
+- Cleanup
+
+    Cleanup the local repository before initialize a new repository.
+    All files and sub directories in the repository path will be removed.
+    Default: `false`.
 
 ## How-To create a ScriptRunner Action
 
 - Install `Git for Windows` at the ScriptRunner service host.
-- Download the [Invoke-GitSync.ps1](./Invoke-GitSync.ps1) script to the ScriptRunner script repository. The default location of the ScriptRunner script repository is `C:\ProgramData\AppSphere\ScriptMgr`.
+- Download the [Invoke-GitSparseCheckout.ps1](./Invoke-GitSparseCheckout.ps1) script to the ScriptRunner script repository. The default location of the ScriptRunner script repository is `C:\ProgramData\AppSphere\ScriptMgr`.
 - Use the ScriptRunner Admin App to
-  - create a Credential with UserName and Password for authenthication at the git server, if you want to clone a private git repository. If you want to clone a public repository, you can use the `UserName` ParameterSet.
-  - create a new `Action` with the [Invoke-GitSync.ps1](./Invoke-GitSync.ps1) script.
-  - select `Direct Service Execution` as target of the `Action`.
+  - create a Credential with UserName and Password for authenthication at the git server, if you want to clone a private git repository. A credential is not required, if you want to clone a public repository.
+- create a new `Action` with the [Invoke-GitSparseCheckout.ps1](./Invoke-GitSparseCheckout.ps1) script.
+  - select the target `Direct Service Execution` in the new `Action` wizard.
   - set the required script parameters to `Cannot be changed at script runtime` to enable scheduling for the `Action`.
   - example for the assignment of action parameters:
 

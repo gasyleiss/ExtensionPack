@@ -72,7 +72,8 @@ param(
     [bool]$CheckSSL = $true
 )
 
-$userNamePattern = [regex]'^([^_]|[a-zA-Z0-9]){1}(?:[a-zA-Z0-9\.\_]|-(?=[a-zA-Z0-9])){0,38}$'
+$userNamePattern = [regex]'^([^_]|[a-zA-Z0-9]){1}(?:[a-zA-Z0-9._]|-(?=[a-zA-Z0-9])){0,38}$'
+$showError = $true
 
 function Add-SRXResultMessage ([string[]] $Message) {
     if($SRXEnv -and $Message){
@@ -85,20 +86,26 @@ function Add-SRXResultMessage ([string[]] $Message) {
     }
 }
 
-function Test-LastExitcode ([string]$ActionFailed) {
+function Test-LastExitcode ([string]$ActionFailed, [bool]$ErrorOutput = $true) {
     if ($LASTEXITCODE -ne 0) {
-        $err = $Error[0]
-        if($err){
-            if($SRXEnv){
-                $SRXEnv.ResultMessage += $err.Exception | Out-String
+        if($ErrorOutput){
+            $err = $Error[0]
+            if($err){
+                if($SRXEnv){
+                    $SRXEnv.ResultMessage += $err.Exception | Out-String
+                }
             }
+            $Script:currentLocation | Set-Location
+            Write-Error -Message "Failed to run '$ActionFailed' with exit code '$LASTEXITCODE'." -ErrorAction 'Stop'
         }
-        $Script:currentLocation | Set-Location
-        Write-Error -Message "Failed to run '$ActionFailed' with '$LASTEXITCODE'." -ErrorAction 'Stop'
+        else{
+            # surpress git error output, if giturl contains cleartext password
+            Write-Error -Message "Failed to run 'git command' with exit code '$LASTEXITCODE'." -ErrorAction 'Stop'
+        }
     }
 }
 
-function Invoke-GitCommand ([string[]]$ArgumentList){
+function Invoke-GitCommand ([string[]]$ArgumentList, [bool]$ErrorOutput = $true){
     if(-not $ArgumentList){
         throw "Invalid command. No arguments specified."
     }
@@ -106,14 +113,18 @@ function Invoke-GitCommand ([string[]]$ArgumentList){
         # redirect stderr of git.exe to stdout
         # see: https://stackoverflow.com/questions/2095088/error-when-calling-3rd-party-executable-from-powershell-when-using-an-ide
         $result = (& cmd.exe '/c' "`"$script:GitExePath`" 2>&1" $ArgumentList)
-        $result
-        Add-SRXResultMessage -Message $result
+        if($ErrorOutput){
+            $result
+            Add-SRXResultMessage -Message $result
+        }
     }
     catch {
-        $_
+        if($ErrorOutput){
+            $_
+        }
     }
     finally{
-        Test-LastExitcode -ActionFailed "git $ArgumentList"
+        Test-LastExitcode -ActionFailed "git $ArgumentList" -ErrorOutput $ErrorOutput
     }
 }
 
@@ -134,6 +145,8 @@ if($GitRepoUrl.Trim().StartsWith('https://') -or $GitRepoUrl.Trim().StartsWith('
             }
             throw "Invalid UserName '$($GitUserCredential.UserName)'. The user name does not match the GitHub user name pattern."
         }
+        # surpress git output, if giturl contains cleartext password
+        $showError = $false
         $cred = New-Object -TypeName 'System.Net.NetworkCredential' -ArgumentList @($GitUserCredential.UserName, $GitUserCredential.Password)
         $gitUrl = $GitRepoUrl.Insert($i, $cred.UserName + ':' + $([uri]::EscapeDataString($cred.Password)) + '@')
         $GitRepoUrl = $($gitUrl.Replace($([uri]::EscapeDataString($cred.Password)), '*****'))
@@ -170,26 +183,26 @@ if(Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue){
 
     # init new local repo
     [string[]]$arguments = @('init')
-    Invoke-GitCommand $arguments
+    Invoke-GitCommand -ArgumentList $arguments -ErrorOutput $showError
     # activate sparse checkout
     $arguments = @('config', 'core.sparseCheckout', 'true')
-    Invoke-GitCommand $arguments
+    Invoke-GitCommand -ArgumentList $arguments -ErrorOutput $showError
     # do not prompt for user/password
     $arguments = @('config', 'core.askPass', 'false')
-    Invoke-GitCommand $arguments
+    Invoke-GitCommand -ArgumentList $arguments -ErrorOutput $showError
 
     # SSL handling
      if(!$CheckSSL){
         $arguments = @('config', 'http.sslVerify', 'false')
-        Invoke-GitCommand $arguments
+        Invoke-GitCommand -ArgumentList $arguments -ErrorOutput $showError
      }
 
     $result = (& cmd.exe '/c' "`"$GitExePath`" 2>&1" @('remote', 'show'))
     if($result -and ($result -eq 'origin')){
-        Invoke-GitCommand @('remote', 'update')
+        Invoke-GitCommand -ArgumentList @('remote', 'update') -ErrorOutput $showError
     }
     else{
-        Invoke-GitCommand @('remote', 'add', '-f', 'origin',  $gitUrl)
+        Invoke-GitCommand -ArgumentList @('remote', 'add', '-f', 'origin',  $gitUrl) -ErrorOutput $showError
     }
     # setup sparse dirs
     if(Test-Path -Path '.\.git\info\sparse-checkout' -ErrorAction SilentlyContinue){
@@ -205,10 +218,10 @@ if(Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue){
     }
     # checkout specified branch 
     $arguments = @('checkout', $Branch)
-    Invoke-GitCommand $arguments
+    Invoke-GitCommand -ArgumentList $arguments -ErrorOutput $showError
 
     $arguments = @('pull', 'origin')
-    Invoke-GitCommand $arguments
+    Invoke-GitCommand -ArgumentList $arguments -ErrorOutput $showError
 
     $Script:currentLocation | Set-Location
 }

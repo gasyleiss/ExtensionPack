@@ -1,4 +1,4 @@
-﻿<#
+ <#
 .SYNOPSIS
     Checkout the given SubDirs of a Git repository to ScriptRunner Library.
 
@@ -32,6 +32,10 @@
     All files and sub directories in the repository path will be removed.
     Default value is 'false'.
 
+.PARAMETER CheckSSL
+    Do a SSL Check on git communication?
+    Default value is 'true'.
+
 .NOTES
     General notes
     -------------------
@@ -64,10 +68,11 @@ param(
     [string]$Branch = 'master',
     [string]$SRLibraryPath = 'C:\ProgramData\AppSphere\ScriptMgr\Git',
     [string]$GitExePath = 'C:\Program Files\Git\cmd\git.exe',
-    [bool]$Cleanup = $false
+    [bool]$Cleanup = $false,
+    [bool]$CheckSSL = $true
 )
 
-$userNamePattern = [regex]'^([^_]|[a-zA-Z0-9]){1}(?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$'
+$userNamePattern = [regex]'^([^_]|[a-zA-Z0-9]){1}(?:[a-zA-Z0-9\.\_]|-(?=[a-zA-Z0-9])){0,38}$'
 
 function Add-SRXResultMessage ([string[]] $Message) {
     if($SRXEnv -and $Message){
@@ -172,6 +177,12 @@ if(Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue){
     # do not prompt for user/password
     $arguments = @('config', 'core.askPass', 'false')
     Invoke-GitCommand $arguments
+
+    # SSL handling
+     if(!$CheckSSL){
+        $arguments = @('config', 'http.sslVerify', 'false')
+        Invoke-GitCommand $arguments
+     }
 
     $result = (& cmd.exe '/c' "`"$GitExePath`" 2>&1" @('remote', 'show'))
     if($result -and ($result -eq 'origin')){

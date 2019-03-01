@@ -29,6 +29,9 @@
     
 .Parameter Body
     Specifies the body (content) of the e-mail message
+    
+.Parameter BodyEncoding
+    Specifies the type of encoding for the body
 
 .Parameter Cc
     Specifies the e-mail addresses to which a carbon copy (CC) of the e-mail message is sent. 
@@ -71,6 +74,8 @@ Param(
     [PSCredential]$ServerCredential,
     [ValidateSet('Normal','High','Low')]
     [string]$Priority='Normal',
+    [ValidateSet('UTF8','ASCII','Default','UTF32','BigEndianUnicode','Byte','OEM','String','Unicode','UTF7','UTF8BOM','UTF8NoBOM')]
+    [string]$BodyEncoding = 'UTF8',
     [switch]$UseSsl ,
     [switch]$BodyAsHtml
 )
@@ -93,6 +98,9 @@ try{
 
             .PARAMETER MailBody
                 Specifies the body of the email message
+                
+            .Parameter MailBodyEncoding
+                Specifies the type of encoding for the body
 
             .PARAMETER MailUseSsl
                 Indicates that the cmdlet uses the Secure Sockets Layer (SSL) protocol to establish a connection to the remote computer to send mail
@@ -131,6 +139,8 @@ try{
             [bool]$MailUseSsl,
             [ValidateSet('Normal','High','Low')]    
             [string]$MailPriority ='Normal',
+            [ValidateSet('UTF8','ASCII','Default','UTF32','BigEndianUnicode','Byte','OEM','String','Unicode','UTF7','UTF8BOM','UTF8NoBOM')]
+            [string]$MailBodyEncoding = 'UTF8',
             [string]$MailServer ,
             [PSCredential]$Credential,
             [string[]]$CopyRecipients, 
@@ -150,6 +160,7 @@ try{
                                     'From' = $MailSender
                                     'Priority' = $MailPriority
                                     'UseSsl' = $MailUseSsl
+                                    'Encoding' = $BodyEncoding
                                     }
             if([System.String]::IsNullOrWhiteSpace($MailServer) -eq $false){# Server
                 $cmdArgs.Add('SmtpServer' ,$MailServer)
@@ -177,7 +188,7 @@ try{
   
     SendMail -MailSender $From -MailRecipients $Addr -MailSubject $Subject -MailBody $Body -MailUseSsl $UseSsl `
             -MailPriority $Priority -MailServer $SmtpServer -Credential $ServerCredential -CopyRecipients $Script:copies `
-            -Files $Script:atts -HtmlBody:$BodyAsHtml
+            -Files $Script:atts -HtmlBody:$BodyAsHtml -MailBodyEncoding $BodyEncoding
 
     if($SRXEnv) {
         $SRXEnv.ResultMessage = "Mail sent out"

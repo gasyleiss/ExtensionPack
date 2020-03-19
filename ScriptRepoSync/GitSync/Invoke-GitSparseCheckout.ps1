@@ -1,52 +1,46 @@
- <#
+<#
 .SYNOPSIS
     Checkout the given SubDirs of a Git repository to ScriptRunner Library.
-
 .DESCRIPTION
     Checkout a Git repository to ScriptRunner Library.
     If you specifiy SparseDirs, only the given directories will be checked out.
     If you want to checkout a private repository, you must specify the GitUserCredential.
-
 .PARAMETER GitRepoUrl
     URL of the git repository. e.g. 'https://github.com/ScriptRunner/ActionPacks.git'
-
 .PARAMETER GitUserCredential
     Credential of a git user, who is authorized to access the given git repository.
     Note that an email address is not a valid account name. You must use this ParameterSet for private repositories.
-
 .PARAMETER SparseDirs
     Specify the list of subfolders you want to check out. If empty, all files will be checked out.
     Example: "ActiveDirectory/*", "O365/*"
-
 .PARAMETER Branch
     The remote branch to check out. Default value is 'master'.
-
 .PARAMETER SRLibraryPath
     Path to the ScriptRunner Library. Default value is 'C:\ProgramData\AppSphere\ScriptMgr'.
-
 .PARAMETER GitExePath
     Path to the git execuatble. Default value is 'C:\Program Files\Git\cmd\git.exe'.
-
 .PARAMETER Cleanup
     Cleanup the local repository before initialize a new repository.
     All files and sub directories in the repository path will be removed.
     Default value is 'false'.
-
 .PARAMETER CheckSSL
     Do a SSL Check on git communication?
     Default value is 'true'.
-
+.Parameter CreateRepositoryFolder
+    Creates a folder with the repository name in the storage path, if not available. 
+    Otherwise, the system synchronizes directly to the storage path.
+    Default value is 'true'.
+.Parameter RemoveGitFolder
+    Deletes the hidden folder .git and .github from the storage path, after synchronization
+    Default value is 'false'.
 .NOTES
     General notes
     -------------------
     Run as scheduled ScriptRunner Action on target 'Direct Service Execution'.
-
     Requires Git for Windows
     https://git-for-windows.github.io
-
     Optional: Git Credential Manager for Windows 
     https://github.com/Microsoft/Git-Credential-Manager-for-Windows
-
     Disclaimer
     -------------------
     This PowerShell script was developed and optimized for ScriptRunner. The use of the scripts requires ScriptRunner. 
@@ -55,7 +49,6 @@
     the use and the consequences of the use of this freely available script.
     PowerShell is a product of Microsoft Corporation. ScriptRunner is a product of ScriptRunner Software GmbH.
     © ScriptRunner Software GmbH
-
 #>
 
 [CmdletBinding(DefaultParameterSetName='Default')]
@@ -67,8 +60,10 @@ param(
     [string[]]$SparseDirs,
     [string]$Branch = 'master',
     [string]$SRLibraryPath = 'C:\ProgramData\AppSphere\ScriptMgr\Git',
+    [bool]$CreateRepositoryFolder = $true,
     [string]$GitExePath = 'C:\Program Files\Git\cmd\git.exe',
     [bool]$Cleanup = $false,
+    [bool]$RemoveGitFolder = $false,
     [bool]$CheckSSL = $true
 )
 
@@ -168,10 +163,11 @@ if(Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue){
     $repo = $gitUrl.Substring($i)
     $repo = $repo.Split('.')[0]
     Write-Output "Repository: '$repo'."
-    $SRLibraryPath = Join-Path -Path $SRLibraryPath -ChildPath $repo
-    if(-not (Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue)){
-        "Create directory '$SRLibraryPath' ..."
-        $null = New-Item -Path $SRLibraryPath -ItemType Directory -Force
+    $RepoPath = Join-Path -Path $SRLibraryPath -ChildPath $repo
+    if(-not (Test-Path -Path $RepoPath -ErrorAction SilentlyContinue) -and ($CreateRepositoryFolder -eq $true)){
+        "Create directory '$RepoPath' ..."
+        $null = New-Item -Path $RepoPath -ItemType Directory -Force
+        $SRLibraryPath = $RepoPath
     }
     Set-Location -Path $SRLibraryPath
     if($Cleanup){
@@ -224,9 +220,20 @@ if(Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue){
     Invoke-GitCommand -ArgumentList $arguments -ErrorOutput $showError
 
     $Script:currentLocation | Set-Location
+
+    if($RemoveGitFolder -eq $true){
+        [string]$DotGitFolder = "$($SRLibraryPath)\.git"
+        if((Test-Path -Path $DotGitFolder -ErrorAction SilentlyContinue) -eq $true){
+            Remove-Item -Path $DotGitFolder -Recurse -Force -Confirm:$false -ErrorAction Stop
+        }
+        $DotGitFolder = "$($SRLibraryPath)\.github"
+        if((Test-Path -Path $DotGitFolder -ErrorAction SilentlyContinue) -eq $true){
+            Remove-Item -Path $DotGitFolder -Recurse -Force -Confirm:$false -ErrorAction Stop
+        }
+    }
+
+    Write-Output "done."
 }
 else {
     Write-Error -Message "ScriptRunner Library Path '$SRLibraryPath' does not exist." -ErrorAction 'Stop'
 }
-
-"done."

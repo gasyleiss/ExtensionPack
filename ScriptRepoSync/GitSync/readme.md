@@ -39,6 +39,17 @@ The script requires [Git for Windows](https://git-for-windows.github.io). You ca
     Cleanup the local repository before initialize a new repository.
     All files and sub directories in the repository path will be removed.
     Default: `false`.
+    
+- CreateRepositoryFolder
+
+    Creates a folder with the repository name in the storage path, if not available. 
+    Otherwise, the system synchronizes directly to the storage path.
+    Default value is 'true'    
+    
+- RemoveGitFolder
+
+    Deletes the hidden folder .git and .github from the storage path, after synchronization
+    Default value is 'false'.    
 
 ## How-To create a ScriptRunner Action
 

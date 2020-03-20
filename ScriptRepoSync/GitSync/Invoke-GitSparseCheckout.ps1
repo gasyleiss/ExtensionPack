@@ -24,7 +24,7 @@
     All files and sub directories in the repository path will be removed before checking out the repo.
 .PARAMETER CheckSSL
     Do a SSL Check on git communication?
-.Parameter AddRepositoryNameToPah
+.Parameter AddRepositoryNameToPath
     Creates a folder with the repository name in the storage path, if not available. 
     Otherwise, the system synchronizes directly to the storage path.
     Default value is 'true'.
@@ -47,7 +47,7 @@
     The terms of use for ScriptRunner do not apply to this script. In particular, ScriptRunner Software GmbH assumes no liability for the function, 
     the use and the consequences of the use of this freely available script.
     PowerShell is a product of Microsoft Corporation. ScriptRunner is a product of ScriptRunner Software GmbH.
-    © ScriptRunner Software GmbH
+    Â© ScriptRunner Software GmbH
 #>
 
 [CmdletBinding(DefaultParameterSetName='Default')]

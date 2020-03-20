@@ -16,7 +16,7 @@
 .PARAMETER Branch
     The remote branch to check out. Default value is 'master'.
 .PARAMETER SRLibraryPath
-    Path to the ScriptRunner Library. Default value is 'C:\ProgramData\AppSphere\ScriptMgr'.
+    Sync the repository to this path at the ScriptRunner Library. Default value is 'C:\ProgramData\AppSphere\ScriptMgr'.
 .PARAMETER GitExePath
     Path to the git execuatble. Default value is 'C:\Program Files\Git\cmd\git.exe'.
 .PARAMETER Cleanup
@@ -43,12 +43,12 @@
     https://github.com/Microsoft/Git-Credential-Manager-for-Windows
     Disclaimer
     -------------------
-    This PowerShell script was developed and optimized for ScriptRunner. The use of the scripts requires ScriptRunner. 
+    This PowerShell script was developed and optimized for ScriptRunner. The use of the scripts does not require ScriptRunner.
     The customer or user is authorized to copy the script from the repository and use them in ScriptRunner. 
     The terms of use for ScriptRunner do not apply to this script. In particular, ScriptRunner Software GmbH assumes no liability for the function, 
     the use and the consequences of the use of this freely available script.
     PowerShell is a product of Microsoft Corporation. ScriptRunner is a product of ScriptRunner Software GmbH.
-    Â© ScriptRunner Software GmbH
+    © ScriptRunner Software GmbH
 #>
 
 [CmdletBinding(DefaultParameterSetName='Default')]

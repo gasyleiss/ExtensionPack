@@ -18,7 +18,7 @@
 
 .PARAMETER SRLibraryPath
     Path to the ScriptRunner script repository.
-    e.g. 'C:\ProgramData\AppSphere\ScriptMgr\TFS'
+    e.g. 'C:\ProgramData\ScriptRunner\ScriptMgr\TFS'
 
 .PARAMETER CleanSync
     Cleanup the local workspace before getting the latest version.
@@ -42,7 +42,7 @@ param(
     [pscredential]$TfsCredential,
     [Parameter(Mandatory = $true)]
     [string]$TeamProject,
-    [string]$SRLibraryPath = 'C:\ProgramData\AppSphere\ScriptMgr\TFS',
+    [string]$SRLibraryPath = 'C:\ProgramData\ScriptRunner\ScriptMgr\TFS',
     [switch]$CleanSync
 )
 

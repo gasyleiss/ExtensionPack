@@ -22,7 +22,7 @@ The script requires the TFS Power Tools. You can download the Tools from the [Vi
 - SRLibraryPath
 
   Path to the ScriptRunner script repository, where the local TFS workspace is created.  
-  Default value: `C:\ProgramData\AppSphere\ScriptMgr\TFS`
+  Default value: `C:\ProgramData\ScriptRunner\ScriptMgr\TFS`
 
 - CleanSync
 
@@ -32,7 +32,7 @@ The script requires the TFS Power Tools. You can download the Tools from the [Vi
 
 - Install the TFS Power Tools at the ScriptRunner service host.
 - Download the [Invoke-TfsSync.ps1](./Invoke-TfsSync.ps1) script to the ScriptRunner script repository.  
-  The default location of the ScriptRunner script repository is `C:\ProgramData\AppSphere\ScriptMgr`.
+  The default location of the ScriptRunner script repository is `C:\ProgramData\ScriptRunner\ScriptMgr`.
 - Use the ScriptRunner Admin App to
   - create a `Credential` with UserName and Password for authenthication at the Team Foundation Server.
   - create a new `Action` with the [Invoke-TfsSync.ps1](./Invoke-TfsSync.ps1) script.

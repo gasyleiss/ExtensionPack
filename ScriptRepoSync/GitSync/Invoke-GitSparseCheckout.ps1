@@ -1,61 +1,53 @@
- <#
+<#
 .SYNOPSIS
-    Checkout the given SubDirs of a Git repository to ScriptRunner Library.
-
+    Checkout the given SubDirs of a branch of a Git repository to ScriptRunner Library.
 .DESCRIPTION
-    Checkout a Git repository to ScriptRunner Library.
+    Checkout a branch of a Git repository to ScriptRunner Library.
     If you specifiy SparseDirs, only the given directories will be checked out.
     If you want to checkout a private repository, you must specify the GitUserCredential.
-
 .PARAMETER GitRepoUrl
     URL of the git repository. e.g. 'https://github.com/ScriptRunner/ActionPacks.git'
-
 .PARAMETER GitUserCredential
     Credential of a git user, who is authorized to access the given git repository.
     Note that an email address is not a valid account name. You must use this ParameterSet for private repositories.
-
 .PARAMETER SparseDirs
     Specify the list of subfolders you want to check out. If empty, all files will be checked out.
     Example: "ActiveDirectory/*", "O365/*"
-
 .PARAMETER Branch
     The remote branch to check out. Default value is 'master'.
-
 .PARAMETER SRLibraryPath
-    Path to the ScriptRunner Library. Default value is 'C:\ProgramData\AppSphere\ScriptMgr'.
-
+    Check out the branch of the repository to this path at the ScriptRunner Library. Default value is 'C:\ProgramData\ScriptRunner\ScriptMgr\Git'.
 .PARAMETER GitExePath
     Path to the git execuatble. Default value is 'C:\Program Files\Git\cmd\git.exe'.
-
 .PARAMETER Cleanup
-    Cleanup the local repository before initialize a new repository.
-    All files and sub directories in the repository path will be removed.
-    Default value is 'false'.
-
+    Cleanup the local repository before initializing a new repository.
+    All files and sub directories in the repository path will be removed before checking out the repo.
 .PARAMETER CheckSSL
     Do a SSL Check on git communication?
+.Parameter AddRepositoryNameToPath
+    Creates a folder with the repository name in the storage path, if not available. 
+    Otherwise, the system synchronizes directly to the storage path.
     Default value is 'true'.
-
+.Parameter RemoveGitConfig
+    Deletes the hidden folder .git and .github from the storage path, after checking out the repo.
+    This will also cleanup the local repository path before initializing a new repository.
+    All files and sub directories in the repository path will be removed before checking out the repo.
 .NOTES
     General notes
     -------------------
     Run as scheduled ScriptRunner Action on target 'Direct Service Execution'.
-
     Requires Git for Windows
     https://git-for-windows.github.io
-
     Optional: Git Credential Manager for Windows 
     https://github.com/Microsoft/Git-Credential-Manager-for-Windows
-
     Disclaimer
     -------------------
-    This PowerShell script was developed and optimized for ScriptRunner. The use of the scripts requires ScriptRunner. 
+    This PowerShell script was developed and optimized for ScriptRunner. The use of the scripts does not require ScriptRunner.
     The customer or user is authorized to copy the script from the repository and use them in ScriptRunner. 
     The terms of use for ScriptRunner do not apply to this script. In particular, ScriptRunner Software GmbH assumes no liability for the function, 
     the use and the consequences of the use of this freely available script.
     PowerShell is a product of Microsoft Corporation. ScriptRunner is a product of ScriptRunner Software GmbH.
     © ScriptRunner Software GmbH
-
 #>
 
 [CmdletBinding(DefaultParameterSetName='Default')]
@@ -66,10 +58,12 @@ param(
     [pscredential]$GitUserCredential,
     [string[]]$SparseDirs,
     [string]$Branch = 'master',
-    [string]$SRLibraryPath = 'C:\ProgramData\AppSphere\ScriptMgr\Git',
+    [string]$SRLibraryPath = 'C:\ProgramData\ScriptRunner\ScriptMgr\Git',
+    [bool]$AddRepositoryNameToPath = $true,
     [string]$GitExePath = 'C:\Program Files\Git\cmd\git.exe',
-    [bool]$Cleanup = $false,
-    [bool]$CheckSSL = $true
+    [switch]$Cleanup,
+    [switch]$RemoveGitConfig,
+    [switch]$CheckSSL
 )
 
 $userNamePattern = [regex]'^([^_]|[a-zA-Z0-9]){1}(?:[a-zA-Z0-9._]|-(?=[a-zA-Z0-9])){0,38}$'
@@ -128,6 +122,7 @@ function Invoke-GitCommand ([string[]]$ArgumentList, [bool]$ErrorOutput = $true)
     }
 }
 
+# entry point
 if(-not (Test-Path -Path $GitExePath -ErrorAction SilentlyContinue)){
     throw "'$GitExePath' does not exist."
 }
@@ -168,13 +163,18 @@ if(Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue){
     $repo = $gitUrl.Substring($i)
     $repo = $repo.Split('.')[0]
     Write-Output "Repository: '$repo'."
-    $SRLibraryPath = Join-Path -Path $SRLibraryPath -ChildPath $repo
+    if($AddRepositoryNameToPath){
+        $SRLibraryPath = Join-Path -Path $SRLibraryPath -ChildPath $repo
+    }
     if(-not (Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue)){
         "Create directory '$SRLibraryPath' ..."
         $null = New-Item -Path $SRLibraryPath -ItemType Directory -Force
     }
     Set-Location -Path $SRLibraryPath
-    if($Cleanup){
+    if($Cleanup.IsPresent -or $RemoveGitConfig.IsPresent){
+        if([string]::Equals($SRLibraryPath.Trim('\'), "$(Join-Path -Path $env:ProgramData -ChildPath 'ScriptRunner\ScriptMgr')")){
+            Write-Error "Cannot remove path '$($SRLibraryPath)'!" -ErrorAction Stop
+        }
         "Cleanup '$SRLibraryPath' ..."
         Get-ChildItem | Remove-Item -Recurse -Force
         Get-ChildItem -Hidden | Remove-Item -Recurse -Force
@@ -192,7 +192,7 @@ if(Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue){
     Invoke-GitCommand -ArgumentList $arguments -ErrorOutput $showError
 
     # SSL handling
-     if(!$CheckSSL){
+     if($CheckSSL.IsPresent){
         $arguments = @('config', 'http.sslVerify', 'false')
         Invoke-GitCommand -ArgumentList $arguments -ErrorOutput $showError
      }
@@ -224,9 +224,22 @@ if(Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue){
     Invoke-GitCommand -ArgumentList $arguments -ErrorOutput $showError
 
     $Script:currentLocation | Set-Location
+
+    if($RemoveGitConfig.IsPresent){
+        [string]$gitConfigPath = Join-Path -Path $SRLibraryPath -ChildPath ".git"
+        if(Test-Path -Path $gitConfigPath -ErrorAction SilentlyContinue){
+            "Remove '$($gitConfigPath)' ..."
+            Remove-Item -Path $gitConfigPath -Recurse -Force -Confirm:$false -ErrorAction Stop
+        }
+        $gitConfigPath = Join-Path -Path $SRLibraryPath -ChildPath ".github"
+        if(Test-Path -Path $gitConfigPath -ErrorAction SilentlyContinue){
+            "Remove '$($gitConfigPath)' ..."
+            Remove-Item -Path $gitConfigPath -Recurse -Force -Confirm:$false -ErrorAction Stop
+        }
+    }
+
+    Write-Output "done."
 }
 else {
     Write-Error -Message "ScriptRunner Library Path '$SRLibraryPath' does not exist." -ErrorAction 'Stop'
 }
-
-"done."

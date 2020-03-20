@@ -1,6 +1,6 @@
 # Sync Git repositories to ScriptRunner
 
-You can use the [Invoke-GitSparseCheckout.ps1](./Invoke-GitSparseCheckout.ps1) script to clone a Git repository to the ScriptRunner Library or pull updates to a local repository.
+You can use the [Invoke-GitSparseCheckout.ps1](./Invoke-GitSparseCheckout.ps1) script to check out a branch of a Git repository to the ScriptRunner Library or pull updates to a local repository.
 
 The script requires [Git for Windows](https://git-for-windows.github.io). You can download this tool from [GitHub](https://github.com/git-for-windows/git/releases).
 
@@ -26,8 +26,8 @@ The script requires [Git for Windows](https://git-for-windows.github.io). You ca
 
 - SRLibraryPath
 
-    Path to the ScriptRunner Library Path.
-    Default: `C:\ProgramData\AppSphere\ScriptMgr`
+    Check out the branch of the repository to this path at the ScriptRunner Library.
+    Default: `C:\ProgramData\ScriptRunner\ScriptMgr\Git`
 
 - GitExePath
 
@@ -36,14 +36,26 @@ The script requires [Git for Windows](https://git-for-windows.github.io). You ca
 
 - Cleanup
 
-    Cleanup the local repository before initialize a new repository.
-    All files and sub directories in the repository path will be removed.
-    Default: `false`.
+    Cleanup the local repository path before initializing a new repository.
+    All files and sub directories in the repository path will be removed before checking out the branch.
+
+- AddRepositoryNameToPath
+
+    Creates a folder with the repository name in the storage path, if not available.
+    Otherwise, the system synchronizes directly to the storage path.
+    Default value is 'true'
+
+- RemoveGitConfig
+
+    Deletes the hidden folder .git and .github from the storage path, after checking out the repo.
+    This will also cleanup the local repository path before initializing a new repository.
+    All files and sub directories in the repository path will be removed before checking out the repo.
 
 ## How-To create a ScriptRunner Action
 
 - Install `Git for Windows` at the ScriptRunner service host.
-- Download the [Invoke-GitSparseCheckout.ps1](./Invoke-GitSparseCheckout.ps1) script to the ScriptRunner script repository. The default location of the ScriptRunner script repository is `C:\ProgramData\AppSphere\ScriptMgr`.
+- Download the [Invoke-GitSparseCheckout.ps1](./Invoke-GitSparseCheckout.ps1) script to the ScriptRunner script repository.
+  The default location of the ScriptRunner script repository is`C:\ProgramData\ScriptRunner\ScriptMgr`.
 - Use the ScriptRunner Admin App to
   - create a Credential with UserName and Password for authenthication at the git server, if you want to clone a private git repository. A credential is not required, if you want to clone a public repository.
 - create a new `Action` with the [Invoke-GitSparseCheckout.ps1](./Invoke-GitSparseCheckout.ps1) script.

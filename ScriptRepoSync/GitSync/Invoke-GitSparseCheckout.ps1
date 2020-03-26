@@ -32,6 +32,8 @@
     Deletes the hidden folder .git and .github from the storage path, after checking out the repo.
     This will also cleanup the local repository path before initializing a new repository.
     All files and sub directories in the repository path will be removed before checking out the repo.
+.PARAMETER TestConnection
+    Test connection to the GitRepoUrl.
 .NOTES
     General notes
     -------------------
@@ -63,7 +65,8 @@ param(
     [string]$GitExePath = 'C:\Program Files\Git\cmd\git.exe',
     [switch]$Cleanup,
     [switch]$RemoveGitConfig,
-    [switch]$CheckSSL
+    [switch]$CheckSSL,
+    [switch]$TestConnection
 )
 
 $userNamePattern = [regex]'^([^_]|[a-zA-Z0-9]){1}(?:[a-zA-Z0-9._]|-(?=[a-zA-Z0-9])){0,38}$'
@@ -130,6 +133,15 @@ if(-not (Test-Path -Path $GitExePath -ErrorAction SilentlyContinue)){
 if(-not (Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue)){
     New-Item -Path $SRLibraryPath -ItemType 'Directory' -Force
 }
+
+if($TestConnection.IsPresent){
+    $testUri = (Split-Path -Path $GitRepoUrl -Parent) -replace '\\', '/'
+    $result = Invoke-WebRequest -Uri $testUri -UseBasicParsing -UseDefaultCredentials -ErrorAction SilentlyContinue
+    if($null -eq $result -or $result.StausCode -ge 300){
+        throw "Failed to send/receive request to/from '$testUri'. ($result.StatusCode - $result.StatusDescription)"
+    }
+}
+
 if($GitRepoUrl.Trim().StartsWith('https://') -or $GitRepoUrl.Trim().StartsWith('http://')){
     if($PSCmdlet.ParameterSetName -eq 'PrivateRepository'){
         $i = $GitRepoUrl.IndexOf('://')
@@ -153,6 +165,8 @@ if($GitRepoUrl.Trim().StartsWith('https://') -or $GitRepoUrl.Trim().StartsWith('
 else {
     Write-Error -Message "Invalid git URL '$GitRepoUrl'." -ErrorAction 'Stop'
 }
+
+Invoke-WebRequest -Uri $gitUrl -UseBasicParsing -UseDefaultCredentials -ErrorAction SilentlyContinue 
 
 
 if(Test-Path -Path $SRLibraryPath -ErrorAction SilentlyContinue){
